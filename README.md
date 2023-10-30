@@ -70,6 +70,11 @@ Then fill in the fields in the configuration:
 - Private Key for our Certificate
   Paste the contents of key.pem here as-is.
 
+- You can let PoetSaml2 create a self-signed certificate and key pair
+  with OpenSSL by checking "Create Self-Signed Certificate and Private Key"
+  and saving the page. *This will overwrite any previous values for
+  certificate and private key!*
+
 #### IdP Configuration
 
 The information for these fields comes from the identity provider. Depending on
@@ -87,6 +92,9 @@ or extract them from their metadata XML.
 
 - IdP X509 Certificate
   The certificate our identity provider signs its requests with.
+
+- If you have a metadata xml file for the identity provider or have its URL,
+  you can use the import function. *This will overwrite any previous values!*
 
 #### Testing
 
