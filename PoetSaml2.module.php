@@ -82,7 +82,7 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 			"title"			=>	__('Poet SAML2', __FILE__),
 			"summary"		=>	__('A SAML2 Service Provider implementation based on OneLogin/php-saml'),
 			"version"		=>	'0.0.22',
-			"requires"		=>	'PHP>=7.2.0,ProcessWire>=3.0.218,FieldtypeOptions',
+			"requires"		=>	'PHP>=7.2.0,ProcessWire>=3.0.218,FieldtypeOptions,FieldtypeRepeater',
 			"installs"		=>	'ProcessPoetSaml2',
 			"autoload"		=>	true
 		];
