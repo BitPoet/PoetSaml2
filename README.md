@@ -46,6 +46,8 @@ The default of "saml2" usually isn't too bad. Just make sure it doesn't overlap 
 
 You will find a new entry "SAML2 Configuration" under "Access" in the ProcessWire admin.
 
+![SAML2 Configuration Image](https://github.com/BitPoet/bitpoet.github.io/blob/master/img/PoetSaml2_config_overview.png)
+
 Click "Add Configuration" to create a new SP. Give it a name and title.
 
 The name will be a part of the URLs of the endpoints.
@@ -117,6 +119,11 @@ In the best case, all you need to get up and running are just a few steps:
   the metadata.xml for your newly created configuration
 - Import the metadata.xml into your IdP
 
+All necessary fields should be filled now, and you can activate your
+configuration and start testing.
+
+![SP Configuration Image](https://github.com/BitPoet/bitpoet.github.io/blob/master/img/PoetSaml2_config_1.png)
+
 ### Testing
 
 Once you have configured everything and activated the configuration, you will see your own
@@ -161,6 +168,12 @@ Create a user on the ProcessWire side with the same email address.
 Check "Ask me again at next login", then click "Accept".
 
 If all works well, you should be logged in to ProcessWire and see the transmitted properties.
+
+#### Backend Login
+
+PoetSaml2 adds a login button to the backend login form for every activated SAML2 profile.
+
+![Backend Login Image with SAML2 Button](https://github.com/BitPoet/bitpoet.github.io/blob/master/img/PoetSaml2_backend_login.png)
 
 ### Troubleshooting
 
@@ -274,6 +287,8 @@ create new users and update data for existing users.
 - Support basic authentication for select pages to provide a smooth upgrade path for legacy applications
 - Add configurable mapping from passed identity to unique PW user field
 - Add identity mapping hook
+- Make backend login buttons configurable
+- Change naming for individual SP/IdP configurations from "configuration" to "profile"
 
 ## License
 
