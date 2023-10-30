@@ -6,7 +6,8 @@ Based on OneLogin/php-saml
 
 ## Status
 
-alpha - please do not use in production environments
+very alpha - please do not use in production environments. Even in dev enviroments, make sure to backup
+your database and files before installing PoetSaml2.
 
 ## Requirements
 
