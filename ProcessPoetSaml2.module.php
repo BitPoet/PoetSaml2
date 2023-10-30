@@ -229,6 +229,26 @@ class ProcessPoetSaml2 extends Process {
 	}
 	
 	protected function createRepeaters() {
+
+		$repDef = include($this->definitionPath('repeater.php'));
+		foreach($repDef['fields'] as $fname => $fdata) {
+			$f = $this->fields->get($fname);
+			if(! $f) {
+				$f = new Field();
+				$f->name = $fname;
+				$f->setImportData($fdata);
+				$f->addFlag(Field::flagSystem);
+				$this->fields->save($f);
+			}
+		}
+		
+		$after = $repDef['after'];
+		$insertElement = $this->fields->get($after[0]);
+		$afterElement = $this->fields->get($after[1]);
+		
+		$fg = $this->templates->get(self::$templateName)->fieldgroup;
+		$fg->insertAfter($afterElement, $insertElement);
+		$fg->save();
 		
 	}
 	
@@ -280,6 +300,19 @@ class ProcessPoetSaml2 extends Process {
 	}
 	
 	protected function removeRepeaters() {
+
+		$repDef = include($this->definitionPath('repeater.php'));
+
+		$fieldNames = array_reverse(array_keys($repDef['fields']));
+		
+		foreach($fieldNames as $k) {
+			$f = $this->fields->get($k);
+			if($f) {
+				$f->addFlag(Field::flagSystemOverride);
+				$f->removeFlag(Field::flagSystem);
+				$this->fields->delete($f);
+			}
+		}
 		
 	}
 	

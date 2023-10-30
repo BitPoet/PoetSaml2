@@ -164,6 +164,26 @@ return [
 		'type'					=>	'FieldtypeFieldsetClose',
 		'tags'					=>	'PoetSaml2'
 	],
+	
+	'ps2RedirFsOpen'		=>	[
+		'type'					=>	'FieldtypeFieldsetOpen',
+		'label'					=>	'Redirect Target for IdP Initiated Login',
+		'tags'					=>	'PoetSaml2'
+	],
+
+	'ps2RedirDefault'			=>	[
+		'type'					=>	'text',
+		'label'					=>	'Default Redirect for Successful Login',
+		'description'			=>	'At the end of a successful login, users will be redirected here, unless a role-based redirect has been configured.',
+		'notes'					=>	'Put a path relative to your site URL here.'
+		'tags'					=>	'PoetSaml2'
+	],
+	
+	'ps2Redir' . FieldtypeFieldsetOpen::fieldsetCloseIdentifier		=>	[
+		'type'					=>	'FieldtypeFieldsetOpen',
+		'label'					=>	'Redirect Target for IdP Initiated Login',
+		'tags'					=>	'PoetSaml2'
+	],
 
 
 ];

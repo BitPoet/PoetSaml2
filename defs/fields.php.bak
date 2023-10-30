@@ -98,6 +98,7 @@ return [
 		'type'					=>	'checkbox',
 		'label'					=>	'Import Metadata from File',
 		'collapsed'				=>	Inputfield::collapsedYes,
+		'showIf'				=>	'ps2IdpImportUrl!=1',
 		'tags'					=>	'PoetSaml2'
 	],
 
@@ -114,6 +115,7 @@ return [
 		'type'					=>	'checkbox',
 		'label'					=>	'Import Metadata from URL',
 		'collapsed'				=>	Inputfield::collapsedYes,
+		'showIf'				=>	'ps2IdpImportXmlFile!=1',
 		'tags'					=>	'PoetSaml2'
 	],
 	
