@@ -68,6 +68,24 @@ class ProcessPoetSaml2 extends Process {
 	}
 	
 	
+	public function executeExport() {
+		
+		$id = (int)$this->input->get->id;
+		
+		$exporter = new PagesExportImport();
+		
+		$name = $this->pages->get($id)->name;
+		$ids = $this->pages->find("id=$id, include=all");
+		$json = $exporter->exportJSON($ids);
+		
+		header('Content-Type: application/json');
+		header("Content-Disposition: download; filename={$name}.json");
+		echo $json;
+		exit;
+		
+	}
+	
+	
 	public function buildFormAdd() {
 		
 		$form = $this->modules->get('InputfieldForm');
@@ -121,6 +139,7 @@ class ProcessPoetSaml2 extends Process {
 				$this->_('SP'),
 				$this->_('IdP'),
 				$this->_('Metadata'),
+				$this->_('Backup'),
 				$this->_('Delete')
 			]);
 			
@@ -135,6 +154,7 @@ class ProcessPoetSaml2 extends Process {
 					$conf->ps2OurEntityId,
 					$conf->ps2IdpEntityId,
 					"<a class='fa fa-download' href='$metadataUrl' title='" . $this->_("Download Metadata XML") . "' $disabled> </a>",
+					"<a class='fa fa-floppy-o' href='./export?id={$conf->id}' title='" . $this->_("Export Configuration") . "'> </a>",
 					"<a class='fa fa-trash' href='del?id={$conf->id}' title='" . $this->_("Delete Configuration") . "'> </a>"
 				]);
 			}
@@ -165,8 +185,8 @@ class ProcessPoetSaml2 extends Process {
 	public function ___install() {
 		
 		$this->createIndividualFields();
-		$this->createRepeaters();
 		$this->createTemplate();
+		$this->createRepeaters();
 		
 		parent::___install();
 		
@@ -176,8 +196,8 @@ class ProcessPoetSaml2 extends Process {
 	public function ___uninstall() {
 		
 		$this->removeEndpointsPages();
-		$this->removeTemplate();
 		$this->removeRepeaters();
+		$this->removeTemplate();
 		$this->removeIndividualFields();
 		
 		parent::___uninstall();
@@ -243,11 +263,40 @@ class ProcessPoetSaml2 extends Process {
 		}
 		
 		$after = $repDef['after'];
-		$insertElement = $this->fields->get($after[0]);
-		$afterElement = $this->fields->get($after[1]);
+		$repData = $repDef['this'];
+		$f_name = $repData['name'];
+		
+		$fg = new Fieldgroup;
+		$fg->name = "repeater_" . $f_name;
+		foreach($repData['repeaterFields'] as $rf) {
+			$fg->append(wire('fields')->get($rf));
+		}
+		$fg->save();
+		
+		$tpl = new Template;
+		$tpl->name = "repeater_" . $f_name;
+		$tpl->fieldgroup = $fg;
+		$tpl->flags = Template::flagSystem;
+		$tpl->noChildren = 1;
+		$tpl->noParents = 1;
+		$tpl->noGlobal = 1;
+		$tpl->flags = 'PoetSaml2';
+		$tpl->save();
+		
+		$f = new Field;
+		$f->type = wire('modules')->get('FieldtypeRepeater');
+		$f->name = $f_name;
+		//$f->parent_id = wire('pages')->get("name=for-field-{$f->id}")->id;
+		$f->repeaterTitle = $repData['repeaterTitle'];
+		$f->template_id = $tpl->id;
+		$f->label = $repData['label'];
+		$f->addFlag(Field::flagSystem);
+		$f->save();
+		
+		$afterElement = $this->fields->get($after);
 		
 		$fg = $this->templates->get(self::$templateName)->fieldgroup;
-		$fg->insertAfter($afterElement, $insertElement);
+		$fg->insertAfter($f, $afterElement);
 		$fg->save();
 		
 	}
@@ -303,6 +352,17 @@ class ProcessPoetSaml2 extends Process {
 
 		$repDef = include($this->definitionPath('repeater.php'));
 
+		$repData = $repDef['this'];
+		$f = $this->fields->get($repData['name']);
+		
+		$fg = $this->fieldgroups->get('poetsaml2config');
+		$fg->remove($f);
+		$fg->save();
+		
+		$f->addFlag(Field::flagSystemOverride);
+		$f->removeFlag(Field::flagSystem);
+		$this->fields->delete($f);
+		
 		$fieldNames = array_reverse(array_keys($repDef['fields']));
 		
 		foreach($fieldNames as $k) {

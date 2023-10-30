@@ -460,9 +460,14 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		
 		if($this->user->isLoggedIn)
 			$session->logout(false);
+
 		$session->forceLogin($user);
 		$this->users->setCurrentUser($user);
 		$this->wire('user', $user);
+
+		$conf = $this->confPage;
+		if(isset($conf->ps2RedirDefault))
+			$this->session->redirect(rtrim($this->config->urls->root, '/') . $conf->ps2RedirDefault);
 		
 		$session->samlUserdata = $auth->getAttributes();
 		$session->samlNameId = $auth->getNameId();
@@ -484,8 +489,8 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		echo "<h2>Logged in as user: " . $this->user->name . "</h2>";
 
 		if (!empty($attributes)) {
-		    echo '<h2>' . _('User attributes:') . '</h2>';
-		    echo '<table><thead><th>' . _('Name') . '</th><th>' . _('Values') . '</th></thead><tbody>';
+		    echo '<h2>' . $this->_('User attributes:') . '</h2>';
+		    echo '<table><thead><th>' . $this->_('Name') . '</th><th>' . $this->_('Values') . '</th></thead><tbody>';
 		    foreach ($attributes as $attributeName => $attributeValues) {
 		    	if(array_key_exists($attributeName, self::$urnMapping))
 		    		echo '<tr><td>' . htmlentities(self::$urnMapping[$attributeName]['friendly']) . '</td><td><ul>';
@@ -587,6 +592,8 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		if($conf instanceof NullPage)
 			throw new WireException('Unable to initialize SAML2 service provider ' . $name. ': No active configuration with this name');
 		
+		$this->confPage = $conf;
+
 		$nameIdOptions = $this->modules->get('FieldtypeOptions')->getOptions("ps2NameIdFormat");
 		$nameIdFormat = $nameIdOptions->get('id=' . $conf->ps2NameIdFormat)->value;
 		
