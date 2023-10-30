@@ -132,7 +132,7 @@ class ProcessPoetSaml2 extends Process {
 		
 		if($confPages->count() > 0) {
 			
-			$mrk = new MarkupAdminDataTable();
+			$mrk = $this->modules->get('MarkupAdminDataTable');
 			$mrk->setEncodeEntities(false);
 			$mrk->headerRow([
 				$this->_('Configuration'),
