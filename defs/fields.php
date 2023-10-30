@@ -70,7 +70,7 @@ return [
 	
 	'ps2OurPrivateKey'		=>	[
 		'type'					=>	'textarea',
-		'label'					=>	'Private Key for our Certificate (PEM)',
+		'label'					=>	'Private Key for our Certificate (PEM). With or without header and footer ("-----BEGIN PRIVATE KEY-----" / "-----END PRIVATE KEY-----"',
 		'tags'					=>	'poetsaml2'
 	],
 	
