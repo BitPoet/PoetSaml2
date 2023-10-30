@@ -22,6 +22,9 @@ identity provider authenticate your site's users, e.g. Microsoft Entra ID.
 
 You can configure multiple service providers that support different identity providers.
 
+If have so far performed successful tests with [SamlTest.id](https://samltest.id) (a
+free SAML2 testing service) and Microsoft Entra ID.
+
 ### Prerequisites
 
 You need to set ```$config->sessionCookieSameSite``` to "None" in site/config.php, otherwise SAML2 logins will not work.
