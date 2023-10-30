@@ -8,7 +8,7 @@ class ProcessPoetSaml2 extends Process {
 		return [
 			'title'			=>	__('Poet SAML2 Admin', __FILE__),
 			'summary'		=>	__('Management interface for the PoetSaml2 module', __FILE__),
-			'version'		=>	'0.0.22',
+			'version'		=>	'0.0.23',
 			'requires'		=>	'PoetSaml2',
 			'icon'			=>	'address-book-o',
 			'page'			=>	[
@@ -356,12 +356,17 @@ class ProcessPoetSaml2 extends Process {
 		$f = $this->fields->get($repData['name']);
 		
 		$fg = $this->fieldgroups->get('poetsaml2config');
-		$fg->remove($f);
-		$fg->save();
+		if($fg) {
+			if($f)
+				$fg->remove($f);
+			$fg->save();
+		}
 		
-		$f->addFlag(Field::flagSystemOverride);
-		$f->removeFlag(Field::flagSystem);
-		$this->fields->delete($f);
+		if($f) {
+			$f->addFlag(Field::flagSystemOverride);
+			$f->removeFlag(Field::flagSystem);
+			$this->fields->delete($f);
+		}
 		
 		$fieldNames = array_reverse(array_keys($repDef['fields']));
 		

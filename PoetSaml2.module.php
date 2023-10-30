@@ -81,7 +81,7 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		return [
 			"title"			=>	__('Poet SAML2', __FILE__),
 			"summary"		=>	__('A SAML2 Service Provider implementation based on OneLogin/php-saml'),
-			"version"		=>	'0.0.22',
+			"version"		=>	'0.0.23',
 			"requires"		=>	'PHP>=7.2.0,ProcessWire>=3.0.218,FieldtypeOptions,FieldtypeRepeater',
 			"installs"		=>	'ProcessPoetSaml2',
 			"autoload"		=>	true
@@ -478,7 +478,7 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 
 		$canLogin = $this->canLogin($user);
 
-		if($canLogin !== true) {
+		if($canLogin === true) {
 
 			$session->forceLogin($user);
 
@@ -505,8 +505,8 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		$conf = $this->confPage;
 		
 		$redirUrl = $this->getLoginRedirectFor($conf, $user);
-		if($redirUrl)
-			$this->session->redirect();
+		if($redirUrl !== false)
+			$this->session->redirect($redirUrl);
 			
 		
 		$attributes = $session->samlUserdata;
@@ -564,14 +564,16 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 	 */
 	public function ___getLoginRedirectFor($conf, $user) {
 
-		foreach($conf->ps2RoleRedirects->sort(-sort) as $roleSort) {
-			if($user->hasRole($roleSort->ps2RedirRole)) {
+		foreach($conf->ps2RoleRedirects->sort('-sort') as $roleSort) {
+			if($user->hasRole($roleSort->ps2RedirRole->name)) {
 				return $roleSort->ps2RedirUrl;
 			}
 		}
 
 		if(isset($conf->ps2RedirDefault))
 			return rtrim($this->config->urls->root, '/') . $conf->ps2RedirDefault;
+		
+		return false;
 		
 	}
 	
