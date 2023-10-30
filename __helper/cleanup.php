@@ -20,7 +20,7 @@ foreach($templates as $tpl) {
 
 foreach($fields as $f) {
 
-	if($f->type instanceof FieldtypeRepeater && ($f->tags === 'PoetSaml2' || strpos($f->name, 'ps2') === 0)) {
+	if($f->type instanceof FieldtypeRepeater && ($f->tags === 'poetsaml2' || strpos($f->name, 'ps2') === 0)) {
 		echo "Repeater field " . $f->name . "...";
 		$f->addFlag(Field::flagSystemOverride);
 		$f->removeFlag(Field::flagSystem);
@@ -45,7 +45,7 @@ foreach($templates as $tpl) {
 
 foreach($fields as $f) {
 
-	if($f->tags === 'PoetSaml2' || $f->tags === 'poetsaml2') {
+	if($f->tags === 'poetsaml2' || $f->tags === 'poetsaml2') {
 		echo "Repeater field " . $f->name . "...";
 		$f->addFlag(Field::flagSystemOverride);
 		$f->removeFlag(Field::flagSystem);

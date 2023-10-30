@@ -461,27 +461,54 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		if($this->user->isLoggedIn)
 			$session->logout(false);
 
-		$session->forceLogin($user);
-		$this->users->setCurrentUser($user);
-		$this->wire('user', $user);
-
-		$conf = $this->confPage;
-		if(isset($conf->ps2RedirDefault))
-			$this->session->redirect(rtrim($this->config->urls->root, '/') . $conf->ps2RedirDefault);
-		
 		$session->samlUserdata = $auth->getAttributes();
 		$session->samlNameId = $auth->getNameId();
 		$session->samlNameIdFormat = $auth->getNameIdFormat();
 		$session->samlNameidNameQualifier = $auth->getNameIdNameQualifier();
 		$session->samlNameidSPNameQualifier = $auth->getNameIdSPNameQualifier();
 		$session->samlSessionIndex = $auth->getSessionIndex();
-
 		
+		$attributes = $auth->getAttributes();
+		$friendlyData = [];
+		foreach($attributes as $k => $v) {
+			if(array_key_exists($k, self::$urnMapping))
+				$friendlyData[self::$urnMapping[$k]['friendly']] = $v;
+		}
+		$this->processSamlUserdata($attributes, $friendlyData);
+
+		$canLogin = $this->canLogin($user);
+
+		if($canLogin !== true) {
+
+			$session->forceLogin($user);
+
+		} else {
+			
+			echo "<html><body>";
+			echo "<p>Not allowed to log in</p>";
+		    echo "<p>$canLogin</p>";
+		    echo "</html>";
+		    exit();
+		    
+		}
+		
+		$this->users->setCurrentUser($user);
+		$this->wire('user', $user);
+
+		// If we have a RelayState set, we redirect there		
 		if (isset($post->RelayState) && \OneLogin\Saml2\Utils::getSelfURL() !== $post->RelayState) {
-		    //$auth->redirectTo($post->RelayState);
 		    $session->redirect($post->RelayState);
 		}
 
+		// Otherwise, we check if we have some kind of redirect URL set, either generally
+		// or by role
+		$conf = $this->confPage;
+		
+		$redirUrl = $this->getLoginRedirectFor($conf, $user);
+		if($redirUrl)
+			$this->session->redirect();
+			
+		
 		$attributes = $session->samlUserdata;
 		$nameId = $session->samlNameId;
 
@@ -508,6 +535,55 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 
 		exit;
 
+	}
+	
+	
+	/**
+	 * Hookable method for actions based on the SAML2 claims returned by the IdP.
+	 *
+	 * You could hook into this method to create users on the fly.
+	 *
+	 * @param Array $userdata Claims as returned by the IdP
+	 * @param Array $friendlyUserdata Claims where a URI/URN could be resolved to a human readable name
+	 * @return void
+	 */
+	public function ___processSamlUserdata($userdata, $friendlyUserdata) {
+		
+		// Nothing yet
+		
+	}
+	
+	
+	/**
+	 * Hookable method that determines the login success redirect URL
+	 * for the logged in user.
+	 *
+	 * @param Page $conf Configuration page
+	 * @param User $user SAML2 logged-in user
+	 * @return string Redirect URL relative to site root
+	 */
+	public function ___getLoginRedirectFor($conf, $user) {
+
+		foreach($conf->ps2RoleRedirects->sort(-sort) as $roleSort) {
+			if($user->hasRole($roleSort->ps2RedirRole)) {
+				return $roleSort->ps2RedirUrl;
+			}
+		}
+
+		if(isset($conf->ps2RedirDefault))
+			return rtrim($this->config->urls->root, '/') . $conf->ps2RedirDefault;
+		
+	}
+	
+	
+	/**
+	 * Hook for extra checks whether a user is allowed to log in
+	 *
+	 * @param User $user
+	 * @return true|string Either boolean true or a string with a rejection reason
+	 */
+	public function ___canLogin($user) {
+		return true;
 	}
 	
 	
