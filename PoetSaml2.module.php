@@ -94,8 +94,9 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 	}
 	
 	public function init() {
+		$phpsaml = version_compare(PHP_VERSION, '8.0.0', '<') ? 'php-saml' : 'php-saml-4';
 		require_once(__DIR__ . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php');
-		require_once(__DIR__ . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'onelogin' . DIRECTORY_SEPARATOR . 'php-saml' . DIRECTORY_SEPARATOR . '_toolkit_loader.php');
+		require_once(__DIR__ . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'onelogin' . DIRECTORY_SEPARATOR . $phpsaml . DIRECTORY_SEPARATOR . '_toolkit_loader.php');
 	}
 	
 	public function ready() {
