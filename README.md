@@ -281,6 +281,10 @@ Released under Mozilla Public License 2.0. See file [LICENSE](https://github.com
 
 php-saml is released under its own license. See file [php-saml/LICENSE](https://github.com/BitPoet/PoetSaml2/php-saml/LICENSE) for details.
 
+xmlseclib is released under its own license. See file [xmlseclib/LICENSE](https://github.com/robrichards/xmlseclibs) for details.
+
+
+
 ## Credits
 
 Big kudos to OneLogin for php-saml and to Sixto Martin as its maintainer.
