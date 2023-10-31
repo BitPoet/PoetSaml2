@@ -11,6 +11,7 @@ your database and files before installing PoetSaml2.
 
 ## Requirements
 
+- PHP >= 7.4.0
 - ProcessWire >= 3.0.218
 - FieldTypeOptions
 - FieldtypeRepeater
