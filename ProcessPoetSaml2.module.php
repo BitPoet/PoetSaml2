@@ -135,6 +135,7 @@ class ProcessPoetSaml2 extends Process {
 			$mrk = $this->modules->get('MarkupAdminDataTable');
 			$mrk->setEncodeEntities(false);
 			$mrk->headerRow([
+				$this->_('Active'),
 				$this->_('Configuration'),
 				$this->_('SP'),
 				$this->_('IdP'),
@@ -148,11 +149,13 @@ class ProcessPoetSaml2 extends Process {
 				$urlBase = $this->modules->get('PoetSaml2')->urlBase;
 				$metadataUrl = ($this->config->https? 'https' : 'http') . '://' . $this->config->httpHost . $this->config->urls->root . $urlBase . '/' . $conf->name . '/metadata?download=1';
 				$disabled = $conf->ps2Active ? '' : "disabled='disabled'";
+				$activeIcon = $conf->ps2Active ? 'fa-check-square-o' : 'fa-square-o';
 				
 				$mrk->row([
+					"<i class='fa $activeIcon'> </i>",
 					'<a href="' . $conf->editUrl . '"><i class="fa fa-edit"> </i> ' . $conf->title . '</a>',
-					$conf->ps2OurEntityId,
-					$conf->ps2IdpEntityId,
+					$this->sanitizer->truncate($conf->ps2OurEntityId, 40),
+					$this->sanitizer->truncate($conf->ps2IdpEntityId, 40),
 					"<a class='fa fa-download' href='$metadataUrl' title='" . $this->_("Download Metadata XML") . "' $disabled> </a>",
 					"<a class='fa fa-floppy-o' href='./export?id={$conf->id}' title='" . $this->_("Export Configuration") . "'> </a>",
 					"<a class='fa fa-trash' href='del?id={$conf->id}' title='" . $this->_("Delete Configuration") . "'> </a>"
