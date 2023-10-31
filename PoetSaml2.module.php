@@ -123,7 +123,7 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		return [
 			"title"			=>	__('Poet SAML2', __FILE__),
 			"summary"		=>	__('A SAML2 Service Provider implementation based on OneLogin/php-saml'),
-			"version"		=>	'0.0.23',
+			"version"		=>	'0.0.24',
 			"requires"		=>	'PHP>=7.2.0,ProcessWire>=3.0.218,FieldtypeOptions,FieldtypeRepeater',
 			"installs"		=>	'ProcessPoetSaml2',
 			"autoload"		=>	true
@@ -167,8 +167,9 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 			
 			$colWidth = floor(100 / ($configs->count() > 4 ? 4 : $configs->count()));
 
-			$wrap = new InputfieldWrapper();
+			$wrap = $this->modules->get('InputfieldFieldset');
 			$wrap->label = $this->_('External Login Providers');
+			$wrap->addClass('uk-margin-top');
 			
 			foreach($configs as $conf) {
 				
