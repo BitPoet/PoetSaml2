@@ -124,7 +124,7 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 			"title"			=>	__('Poet SAML2', __FILE__),
 			"summary"		=>	__('A SAML2 Service Provider implementation based on OneLogin/php-saml'),
 			"version"		=>	'0.0.24',
-			"requires"		=>	'PHP>=7.2.0,ProcessWire>=3.0.218,FieldtypeOptions,FieldtypeRepeater',
+			"requires"		=>	'PHP>=7.3.0,ProcessWire>=3.0.218,FieldtypeOptions,FieldtypeRepeater',
 			"installs"		=>	'ProcessPoetSaml2',
 			"autoload"		=>	true
 		];
@@ -139,9 +139,8 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 	}
 	
 	public function init() {
-		$phpsaml = version_compare(PHP_VERSION, '8.0.0', '<') ? 'php-saml' : 'php-saml-4';
 		require_once(__DIR__ . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php');
-		require_once(__DIR__ . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'onelogin' . DIRECTORY_SEPARATOR . $phpsaml . DIRECTORY_SEPARATOR . '_toolkit_loader.php');
+		require_once(__DIR__ . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'onelogin' . DIRECTORY_SEPARATOR . 'php-saml' . DIRECTORY_SEPARATOR . '_toolkit_loader.php');
 		
 		$this->textTools = $this->sanitizer->getTextTools();
 	}
@@ -521,7 +520,7 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		$attributes = $auth->getAttributes();
 		$this->setSessionData($auth, $attributes);
 		
-		$friendlyData = getFriendlyAttributes($attributes);
+		$friendlyData = $this->getFriendlyAttributes($attributes);
 		$this->processSamlUserdata($attributes, $friendlyData);
 
 		// Perform canLogin check, which is a hookable no-op so developers
@@ -624,6 +623,7 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 	
 	protected function setSessionData($auth, $attributes) {
 		
+		$session = $this->session;
 		$session->samlUserdata = $attributes;
 		$session->samlNameId = $auth->getNameId();
 		$session->samlNameIdFormat = $auth->getNameIdFormat();

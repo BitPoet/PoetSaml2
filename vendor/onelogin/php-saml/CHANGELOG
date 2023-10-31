@@ -1,5 +1,8 @@
 CHANGELOG
 =========
+v4.0.0
+* Supports PHP 8.X
+
 v3.6.1
 * [#467](https://github.com/onelogin/php-saml/issues/467) Fix bug on getSelfRoutedURLNoQuery method
 
