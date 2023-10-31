@@ -23,6 +23,30 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		]
 	];
 	
+	protected static $errMsgs = [
+		'errMsgGeneric'		=>		[
+			'label'				=>	"Auth error from php-saml",
+			'description'		=>	'Available placeholders: {errors}',
+			'default'			=>	"<html><body>\n<p>Errors found</p>\n<p>{errors}</p>\n</html>"
+		],
+		'errMsgUnauthenticated'	=>	[
+			'label'				=>	"Not authenticated",
+			'description'		=>	'No placeholders available',
+			'default'			=>	"<html><body>\n<p>Errors found</p>\n<p>Not authenticated</p>\n</html>"
+		],
+		'errMsgNoLocalUser'	=>	[
+			'label'				=>	"User not found in local database",
+			'description'		=>	'Available placeholders: {uname}',
+			'default'			=>	"<html><body>\n<p>Error!</p>\n<p>User not found in local database!</p>\n</html>"
+		],
+		'errMsgNotAllowed'	=>	[
+			'label'				=>	"Not allowed to login",
+			'description'		=>	'Available placeholders: {uname}, {reason}',
+			'notes'				=>	'Placeholder {reason} is only set if you hook ___canLogin() and return a string as rejection reason',
+			'default'			=>	"<html><body>\n<p>Not allowed to log in</p>\n<p>{reason}</p>\n</html>"
+		]
+	];
+	
 	
 	protected static $nameIdFormats = [
 			'NAMEID_EMAIL_ADDRESS'					=>	'urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress',
@@ -72,6 +96,24 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		'urn:oid:1.3.6.1.4.1.5923.1.1.1.7' => [
 			'friendly' => 'eduPersonEntitlement',
 			'nameformat' => 'urn:oasis:names:tc:SAML:2.0:attrname-format:uri'
+		],
+		'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname'	=>	[
+			'friendly'	=>	'givenname'
+		],
+		'http://schemas.microsoft.com/ws/2008/06/identity/claims/groups'	=>	[
+			'friendly'	=>	'groups'
+		],
+		'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname'	=>	[
+			'friendly'	=>	'sn'
+		],
+		'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'	=>	[
+			'friendly'	=>	'name'
+		],
+		'http://schemas.microsoft.com/identity/claims/objectidentifier'	=>	[
+			'friendly'	=>	'objectidentifier'
+		],
+		'http://schemas.microsoft.com/identity/claims/tenantid'	=>	[
+			'friendly'	=>	'tenantid'
 		]
 	];
 
@@ -90,6 +132,9 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 	
 	public function __constrcut() {
 		$this->set('urlBase', '');
+		foreach(self::$errMsgs as $n => $d) {
+			$this->set($n, $d['default']);
+		}
 		parent::__construct();
 	}
 	
@@ -97,6 +142,8 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		$phpsaml = version_compare(PHP_VERSION, '8.0.0', '<') ? 'php-saml' : 'php-saml-4';
 		require_once(__DIR__ . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php');
 		require_once(__DIR__ . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'onelogin' . DIRECTORY_SEPARATOR . $phpsaml . DIRECTORY_SEPARATOR . '_toolkit_loader.php');
+		
+		$this->textTools = $this->sanitizer->getTextTools();
 	}
 	
 	public function ready() {
@@ -432,51 +479,52 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 
 		$errors = $auth->getErrors();
 
+		// Check if we got any errors from php-saml
 		if (!empty($errors)) {
-			echo "<html><body>";
-			echo "<p>Errors found</p>";
-		    echo '<p>' . implode(', ', $errors) . '</p>';
-		    echo "</html>";
+			echo $this->textTools->populatePlaceholders(
+				$this->errMsgGeneric, [
+					'uname'		=>	$uname
+				]
+			);
 		    exit();
 		}
 
+		// Check if the IdP says we're actually authenticated
 		if (!$auth->isAuthenticated()) {
 			http_response_code(401);
-			echo "<html><body>";
-			echo "<p>Errors found</p>";
-		    echo "<p>Not authenticated</p>";
-		    echo "</html>";
+			echo $this->textTools->populatePlaceholders(
+				$this->errMsgUnauthenticated, [
+					'uname'		=>	$uname
+				]
+			);
 		    exit();
 		}
 
+		// Check if we can find the user in our database. Hook before
+		// ___getLocalUser($uname) and set $event->replace=true to implement
+		// your own lookup logic.
 		$uname = $auth->getNameId();
 		$user = $this->users->get('email=' . $this->sanitizer->email($uname));
-		if($user instanceof NullPage || $user->isGuest()) {
-			echo "<html><body>";
-			echo "<p>Error!</p>";
-		    echo "<p>User not found in local database!</p>";
-		    echo "</html>";
+		if($user instanceof NullPage || $user === false || $user->isGuest()) {
+			echo $this->textTools->populatePlaceholders(
+				$this->errMsgNoLocalUser, [
+					'uname'		=>	$uname
+				]
+			);
 		    exit();
 		}
 		
 		if($this->user->isLoggedIn)
 			$session->logout(false);
 
-		$session->samlUserdata = $auth->getAttributes();
-		$session->samlNameId = $auth->getNameId();
-		$session->samlNameIdFormat = $auth->getNameIdFormat();
-		$session->samlNameidNameQualifier = $auth->getNameIdNameQualifier();
-		$session->samlNameidSPNameQualifier = $auth->getNameIdSPNameQualifier();
-		$session->samlSessionIndex = $auth->getSessionIndex();
-		
 		$attributes = $auth->getAttributes();
-		$friendlyData = [];
-		foreach($attributes as $k => $v) {
-			if(array_key_exists($k, self::$urnMapping))
-				$friendlyData[self::$urnMapping[$k]['friendly']] = $v;
-		}
+		$this->setSessionData($auth, $attributes);
+		
+		$friendlyData = getFriendlyAttributes($attributes);
 		$this->processSamlUserdata($attributes, $friendlyData);
 
+		// Perform canLogin check, which is a hookable no-op so developers
+		// can extend the checking functionality to their likes.
 		$canLogin = $this->canLogin($user);
 
 		if($canLogin === true) {
@@ -485,10 +533,12 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 
 		} else {
 			
-			echo "<html><body>";
-			echo "<p>Not allowed to log in</p>";
-		    echo "<p>$canLogin</p>";
-		    echo "</html>";
+			echo $this->textTools->populatePlaceholders(
+				$this->errMsgNotAllowed, [
+					'uname'		=>	$uname,
+					'reason'	=>	$canLogin ?: ''
+				]
+			);
 		    exit();
 		    
 		}
@@ -508,7 +558,44 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		$redirUrl = $this->getLoginRedirectFor($conf, $user);
 		if($redirUrl !== false)
 			$this->session->redirect($redirUrl);
-			
+		
+		// If all else fails, we output an HTML representation of the SAML data we were sent
+		if(! empty($attributes)) {
+			echo $this->renderSamlData2Html();
+		} else {
+			echo _('No attributes found.');
+		}
+
+		exit;
+
+	}
+	
+	
+	/**
+	 * Hookable user lookup method.
+	 * 
+	 * Gets the IdP-supplied nameId and looks up the user with that
+	 * email address.
+	 *
+	 * You can implement your own lookup logic by hooking this function
+	 * and returning either a User object or boolean FALSE.
+	 *
+	 * @param string $nameId The IdP-supplied nameId
+	 * @return User|boolean
+	 */
+	public function ___getLocalUser($nameId) {
+		
+		$user = $this->users->get('email=' . $this->sanitizer->email($nameId));
+		
+	}
+	
+	/**
+	 * Hookable HTML rendering of SAML data
+	 *
+	 * By default only used as a fallback if no redirect URL
+	 * could be determined.
+	 */
+	public function ___renderSamlData2Html() {
 		
 		$attributes = $session->samlUserdata;
 		$nameId = $session->samlNameId;
@@ -516,26 +603,46 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		echo '<h1>Identified user: '. htmlentities($nameId) .'</h1>';
 		echo "<h2>Logged in as user: " . $this->user->name . "</h2>";
 
-		if (!empty($attributes)) {
-		    echo '<h2>' . $this->_('User attributes:') . '</h2>';
-		    echo '<table><thead><th>' . $this->_('Name') . '</th><th>' . $this->_('Values') . '</th></thead><tbody>';
-		    foreach ($attributes as $attributeName => $attributeValues) {
-		    	if(array_key_exists($attributeName, self::$urnMapping))
-		    		echo '<tr><td>' . htmlentities(self::$urnMapping[$attributeName]['friendly']) . '</td><td><ul>';
-		    	else
-		        	echo '<tr><td>' . htmlentities($attributeName) . '</td><td><ul>';
-		        foreach ($attributeValues as $attributeValue) {
-		            echo '<li>' . htmlentities($attributeValue) . '</li>';
-		        }
-		        echo '</ul></td></tr>';
-		    }
-		    echo '</tbody></table>';
-		} else {
-		    echo _('No attributes found.');
-		}		
-
-		exit;
-
+	    echo '<h2>' . $this->_('User attributes:') . '</h2>';
+	    echo '<table><thead><th>' . $this->_('Name') . '</th><th>' . $this->_('Values') . '</th></thead><tbody>';
+	    foreach ($attributes as $attributeName => $attributeValues) {
+	    	if(array_key_exists($attributeName, self::$urnMapping))
+	    		echo '<tr><td>' . htmlentities(self::$urnMapping[$attributeName]['friendly']) . '</td><td><ul>';
+	    	else
+	        	echo '<tr><td>' . htmlentities($attributeName) . '</td><td><ul>';
+	        foreach ($attributeValues as $attributeValue) {
+	            echo '<li>' . htmlentities($attributeValue) . '</li>';
+	        }
+	        echo '</ul></td></tr>';
+	    }
+	    echo '</tbody></table>';
+		
+	}
+	
+	
+	
+	protected function setSessionData($auth, $attributes) {
+		
+		$session->samlUserdata = $attributes;
+		$session->samlNameId = $auth->getNameId();
+		$session->samlNameIdFormat = $auth->getNameIdFormat();
+		$session->samlNameidNameQualifier = $auth->getNameIdNameQualifier();
+		$session->samlNameidSPNameQualifier = $auth->getNameIdSPNameQualifier();
+		$session->samlSessionIndex = $auth->getSessionIndex();
+		
+	}
+	
+	
+	protected function getFriendlyAttributes($attributes) {
+		
+		$friendlyData = [];
+		
+		foreach($attributes as $k => $v) {
+			if(array_key_exists($k, self::$urnMapping))
+				$friendlyData[self::$urnMapping[$k]['friendly']] = $v;
+		}
+		
+		return $friendlyData;
 	}
 	
 	
@@ -639,6 +746,25 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		;
 		$f->attr('value', $this->urlBase);
 		$inputfields->add($f);
+		
+		$w = $this->modules->get("InputfieldFieldset");
+		$w->attr('id+name', 'wrapmsgs');
+		$w->label = $this->_("HTML for Error Messages");
+		$w->description = $this->_("HTML templates for error messages returned from your endpoints. You can use placeholders with curved braces, e.g. {errors}. You can see which ones are available in the description of each field.");
+		
+		foreach(self::$errMsgs as $name => $data) {
+			$f = $modules->get('InputfieldTextarea');
+			$f->attr('id+name', $name);
+			$f->label = $data['label'];
+			$f->attr('value', $this->{$name} ?: $data['default']);
+			if(isset($data['description']))
+				$f->description = $data['description'];
+			if(isset($data['notes']))
+				$f->description = $data['notes'];
+			$w->append($f);
+		}
+		
+		$inputfields->add($w);
 		
 		return $inputfields;
 		
