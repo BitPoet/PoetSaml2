@@ -6,8 +6,8 @@ Based on OneLogin/php-saml
 
 ## Status
 
-very alpha - please do not use in production environments. Even in dev enviroments, make sure to backup
-your database and files before installing PoetSaml2.
+alpha - please do not use in production environments yet. Even in dev enviroments, make sure to backup
+your database and files before installing PoetSaml2 as things are still in the process of getting finalized.
 
 ## Requirements
 
@@ -22,6 +22,11 @@ your database and files before installing PoetSaml2.
 - ProcessPagesExportImport
   Only needed for importing profile backups, can be installed when needed. If not installed, the "import"
   will not be visible.
+
+### Tested with
+
+- PHP versions 7.4, 8.0 and 8.2
+- ProcessWire versions 3.0.218 and 3.0.230
 
 ## Description
 
