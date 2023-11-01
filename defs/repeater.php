@@ -11,7 +11,7 @@ return [
 			'template_id'			=>	'role',
 			'inputfield'			=>	'InputfieldAsmSelect',
 			'labelFieldName'		=>	'title',
-			'columnWidth'			=>	'50',
+			'columnWidth'			=>	50,
 			'tags'					=>	'PoetSaml2'
 		],
 		
@@ -20,6 +20,7 @@ return [
 			'label'					=>	'Redirect for Successful Login',
 			'description'			=>	'At the end of a successful login, users with the selected role will be redirected here.',
 			'notes'					=>	'Put a path relative to your site URL here.',
+			'columnWidth'			=>	50,
 			'tags'					=>	'PoetSaml2'
 		],
 		

@@ -17,6 +17,12 @@ your database and files before installing PoetSaml2.
 - FieldtypeRepeater
 - PHP OpenSSL extension
 
+## Optional
+
+- ProcessPagesExportImport
+  Only needed for importing profile backups, can be installed when needed. If not installed, the "import"
+  will not be visible.
+
 ## Description
 
 This modules implements a SAML2 service provider. This means you can let an external

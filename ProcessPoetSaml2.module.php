@@ -8,7 +8,7 @@ class ProcessPoetSaml2 extends Process {
 		return [
 			'title'			=>	__('Poet SAML2 Admin', __FILE__),
 			'summary'		=>	__('Management interface for the PoetSaml2 module', __FILE__),
-			'version'		=>	'0.0.30',
+			'version'		=>	'0.0.31',
 			'requires'		=>	'PoetSaml2',
 			'icon'			=>	'address-book-o',
 			'page'			=>	[
@@ -173,7 +173,7 @@ class ProcessPoetSaml2 extends Process {
 				$this->_('IdP'),
 				$this->_('Metadata'),
 				$this->_('Backup'),
-				$this->_('Delete')
+				$this->_('Trash')
 			]);
 			
 			foreach($profilePages as $profile) {
@@ -190,7 +190,7 @@ class ProcessPoetSaml2 extends Process {
 					$this->sanitizer->truncate($profile->ps2IdpEntityId, 40),
 					"<a class='fa fa-download' href='$metadataUrl' title='" . $this->_("Download Metadata XML") . "' $disabled> </a>",
 					"<a class='fa fa-floppy-o' href='./export?id={$profile->id}' title='" . $this->_("Export Profile") . "'> </a>",
-					"<a class='fa fa-trash' href='del?id={$profile->id}' title='" . $this->_("Delete Profile") . "'> </a>"
+					"<a class='fa fa-trash' href='delete?id={$profile->id}' title='" . $this->_("Delete Profile") . "'> </a>"
 				]);
 			}
 			
@@ -209,8 +209,16 @@ class ProcessPoetSaml2 extends Process {
 		$f = $this->modules->get('InputfieldButton');
 		$f->attr('name', 'btnAdd');
 		$f->attr('href', 'add');
-		$f->html = '<i class="fa fa-plus-o"> </i> ' . $this->_('Add Profile');
+		$f->html = '<i class="fa fa-plus"> </i> ' . $this->_('Add Profile');
 		$form->append($f);
+
+		if($this->modules->isInstalled('ProcessPagesExportImport'))	{
+			$f = $this->modules->get('InputfieldButton');
+			$f->attr('name', 'btnImport');
+			$f->attr('href', 'import');
+			$f->html = '<i class="fa fa-folder-o"> </i> ' . $this->_('Import Profile');
+			$form->append($f);
+		}
 		
 		return $form;
 		
@@ -281,16 +289,144 @@ class ProcessPoetSaml2 extends Process {
 				$f->save();
 			}
 			foreach(['ps2IdpX509Cert','ps2IdpEntityId','ps2IdpSOSUrl'] as $fname) {
-				$f = $this->fields->get();
+				$f = $this->fields->get($fname);
 				$f->required = true;
 				$f->requiredIf = 'ps2Active=1';
 				$f->save();
 			}
 		}
+		
+		if(version_compare($from, '0.0.31', '<')) {
+			$f = $this->fields->get('ps2RedirUrl');
+			$f->columnWidth = 50;
+			$f->save();
+		}
 			
 	}
 	
 	
+	public function ___executeImport() {
+		
+		$post = $this->input->post;
+		
+		if($post->submit_json && isset($_FILES['profile'])) {
+			$json = file_get_contents($_FILES["profile"]["tmp_name"]);
+
+			$valid = $this->validateJsonData($json);
+			if($valid === true) {
+				$form = $this->buildFormJson($json);
+				return $form->render();
+			}
+			$form = $this->buildFormUpload($valid);
+			return $form->render();
+		}
+		
+		$form = $this->buildFormUpload();
+		return $form->render();
+		
+	}
+	
+	
+	protected function buildFormJson($json) {
+
+		$form = $this->modules->get('InputfieldForm');
+		$form->attr('method', 'POST');
+		$form->attr('action', $this->config->urls->admin . '/page/export-import/');
+		$form->attr('enctype', 'multipart/form-data');
+		
+		$f = $this->modules->get('InputfieldMarkup');
+		$f->attr('value', '<input type="hidden" name="import_mode" value="create">');
+		$form->append($f);
+		
+		
+		$f = $this->modules->get('InputfieldTextarea');
+		$f->attr('name+id', 'import_json');
+		$f->label = $this->_('JSON Data');
+		$f->attr('value', $json);
+		$form->append($f);
+		
+		$f = $this->modules->get('InputfieldSubmit');
+		$f->attr('name+id', 'submit_test_import');
+		$f->value = 'submit_test_import';
+		$f->text = $this->_('Submit');
+		$form->append($f);
+
+		return $form;		
+	}
+	
+	
+	protected function validateJsonData($json) {
+		
+		$data = json_decode($json, true);
+
+		if(! $data || ! isset($data['pages'][0]['template'])) {
+			return $this->_('Unable to parse json data');
+		}
+		if(count($data['pages']) > 1) {
+			return $this->_('Import file may only contain one profile at a time!');
+		}
+		foreach($data['pages'] as $pageToImport) {
+			if($pageToImport['template'] !== 'poetsaml2config') {
+				return $this->_('Error: Not all pages in JSON data are PoetSaml2 profiles');
+			}
+		}
+
+		return true;
+	}
+	
+	
+	protected function buildFormUpload($message = false) {
+		
+		$form = $this->modules->get('InputfieldForm');
+		$form->attr('method', 'POST');
+		$form->attr('action', './import');
+		$form->attr('enctype', 'multipart/form-data');
+		
+		if($message !== false) {
+			$mrk = $this->modules->get('InputfieldMarkup');
+			$mrk->attr('name', 'messageMarkup');
+			$mrk->attr('value', "<p style='font-size: 1.4em; font-weight: bold;'>$message</p>");
+			$form->append($mrk);
+		}
+		
+		$fwrap = $this->modules->get('InputfieldMarkup');
+		$fwrap->attr('name', 'uploadWrap');
+		$fwrap->label = $this->_('Upload JSON File');
+		$fwrap->description = $this->_('Upload an exported profile in JSON format (.json)');
+		
+		$fileHtml = '<input type="file" name="profile" accept=".json">';
+		$fwrap->attr('value', $fileHtml);
+		
+		$form->append($fwrap);
+		
+		$f = $this->modules->get('InputfieldSubmit');
+		$f->attr('name+id', 'submit_json');
+		$f->value = 'submit_json';
+		$f->text = $this->_('Submit');
+		
+		$form->append($f);
+		
+		return $form;
+		
+		
+	}
+	
+	
+	public function ___executeDelete() {
+		
+		$id = (int)$this->input->get->id;
+		$page = $this->pages->get($id);
+		if($page->template->name !== 'poetsaml2config') {
+			throw new WireException($this->_('Invalid id. You must specify a PoetSaml2 profile id.'));
+		}
+		
+		$this->pages->trash($page);
+		
+		$this->session->redirect($this->page->url);
+		
+	}
+	
+
 	protected function definitionPath($file) {
 		return __DIR__ . DIRECTORY_SEPARATOR . 'defs' . DIRECTORY_SEPARATOR . $file;
 	}
