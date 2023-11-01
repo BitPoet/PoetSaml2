@@ -309,7 +309,7 @@ create new users and update data for existing users.
 - Add JWT support or make sure to co-exist with AppApi
 - Support basic authentication for select pages to provide a smooth upgrade path for legacy applications
 - Add configurable mapping from passed identity to unique PW user field
-- Add identity mapping hook
+- ~~Add identity mapping hook~~
 - ~~Make backend login buttons configurable~~
 - ~~Change naming for individual SP/IdP configurations from "configuration" to "profile"~~
 - Update screenshots
