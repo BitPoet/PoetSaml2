@@ -123,9 +123,10 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		return [
 			"title"			=>	__('Poet SAML2', __FILE__),
 			"summary"		=>	__('A SAML2 Service Provider implementation based on OneLogin/php-saml'),
-			"version"		=>	'0.0.31',
+			"version"		=>	'0.0.35',
 			"requires"		=>	'PHP>=7.3.0,ProcessWire>=3.0.218,FieldtypeOptions,FieldtypeRepeater',
 			"installs"		=>	'ProcessPoetSaml2',
+			"requires"		=>	'FieldtypeListLinks',
 			"autoload"		=>	true
 		];
 	}
@@ -153,7 +154,46 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		}
 		$this->addHookAfter('Pages::saveReady', $this, 'pageSaveProcessing');
 		$this->addHookAfter('ProcessLogin::buildLoginForm', $this, 'addSamlLoginButtons');
+		
+		$this->addHookAfter('FieldtypeListLinks::getOptions', $this, 'getLinkOptions');
 	}
+	
+	
+	public function getLinkOptions(HookEvent $event) {
+		
+		$field = $event->arguments('field');
+		$which = $event->arguments('which');
+
+		if($field->name !== 'ps2DataMapping')
+			return;
+
+		$data = $event->return;
+		
+		if($which === 'left') {
+			
+			foreach(self::$urnMapping as $urn => $claim) {
+				$suffix = strpos($urn, 'urn:') === 0 ? 'urn' : 'MS/http';
+				$label = $claim['friendly'] . ' (' . $suffix . ')';
+				$data[$urn] = $label;
+			}
+			
+		} elseif($which === 'right') {
+			
+			$ut = $this->templates->get('user');
+			foreach($ut->fields as $f) {
+				if($f->type instanceof FieldtypeText && $f->name !== 'email') {
+					$data[$f->name] = $f->label ?: $f->name;
+				}
+			}
+			
+		} else {
+			return;
+		}
+		
+		asort($data);
+		$event->return = $data;
+	}
+	
 	
 	
 	public function addSamlLoginButtons(HookEvent $event) {
@@ -546,6 +586,10 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		$this->users->setCurrentUser($user);
 		$this->wire('user', $user);
 
+		// Perform user update if enabled
+		if($this->confPage->ps2MapUserData)
+			$this->updateUserData($user, $attributes);
+
 		// If we have a RelayState set, we redirect there		
 		if (isset($post->RelayState) && \OneLogin\Saml2\Utils::getSelfURL() !== $post->RelayState) {
 		    $session->redirect($post->RelayState);
@@ -569,6 +613,28 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		exit;
 
 	}
+	
+	
+	/**
+	 * Hookable user data update method.
+	 *
+	 * This method will only be called if ps2MapUserData (Update User Fields From Claim)
+	 * is enabled in the profile.
+	 */
+	 public function ___updateUserData($user, $attributes) {
+	 	
+	 	$mapping = $this->confPage->ps2DataMapping;
+	 	$changed = false;
+	 	foreach($mapping as $urn => $ufield) {
+	 		if(isset($attributes[$urn]) && $user->template->hasField($ufield) && $user->$ufield != $attributes[$urn]) {
+	 			$user->of(false);
+	 			$user->set($ufield, $attributes[$urn]);
+	 			$user->of(true);
+	 			$changed = true;
+	 		}
+	 	}
+	 	$user->save();
+	 }
 	
 	
 	/**

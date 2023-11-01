@@ -15,6 +15,7 @@ your database and files before installing PoetSaml2 as things are still in the p
 - ProcessWire >= 3.0.218
 - FieldTypeOptions
 - FieldtypeRepeater
+- [FieldtypeListLinks](https://github.com/BitPoet/FieldtypeListLinks)
 - PHP OpenSSL extension
 
 ## Optional
@@ -126,13 +127,26 @@ you can use the import function. *This will overwrite any previous values!*
 
 ### Advanced Configuration
 
-At the bottom of the profile, you will find a checkbox for advanced configuration.
+Near the bottom of the profile, you will find a checkbox for advanced configuration.
 
 This lets you set fine grained options for mandatory stuff, encryption and
 signage as well as enabling a compatibility switch for MS ADFS.
 
 Your best source of information on the different options is right now
 the [advanced_settings_example.php in the php-saml repo](https://github.com/SAML-Toolkits/php-saml/blob/4.0.0/advanced_settings_example.php).
+
+### Updating User Data
+
+If you feel daring and have tested your configuration well, you may want to update
+your users' profile fields from the claims sent by the IdP, e.g. phone number,
+name or anything else your provider transmits.
+
+You can do so in the "User Profile Data Update" section at the bottom of the profile.
+Simply select the claim on the left and the user field (only text fields are supported!),
+then click on "Assign Claim to User Field".
+
+![Screenshot of Claim Mapping](https://github.com/BitPoet/bitpoet.github.io/blob/master/img/PoetSaml2-userdatamapping.png)
+
 
 ### Quick Configuration
 
@@ -313,7 +327,7 @@ create new users and update data for existing users.
 - Allow completely login protected ProcessWire instance, i.e. protected "home"
 - Add JWT support or make sure to co-exist with AppApi
 - Support basic authentication for select pages to provide a smooth upgrade path for legacy applications
-- Add configurable mapping from passed identity to unique PW user field
+- ~~Add configurable mapping from passed identity to unique PW user field~~
 - ~~Add identity mapping hook~~
 - ~~Make backend login buttons configurable~~
 - ~~Change naming for individual SP/IdP configurations from "configuration" to "profile"~~

@@ -8,14 +8,18 @@ class ProcessPoetSaml2 extends Process {
 		return [
 			'title'			=>	__('Poet SAML2 Admin', __FILE__),
 			'summary'		=>	__('Management interface for the PoetSaml2 module', __FILE__),
-			'version'		=>	'0.0.31',
-			'requires'		=>	'PoetSaml2',
+			'version'		=>	'0.0.35',
+			'requires'		=>	'PoetSaml2,FieldtypeListLinks',
 			'icon'			=>	'address-book-o',
 			'page'			=>	[
 				'name'			=>	'poetsaml',
 				'parent'		=>	'access',
 				'title'			=>	'SAML2 Configuration',
 				'icon'			=>	'address-book-o'
+			],
+			'permission'	=>	'poetsaml2-admin',
+			'permissions'	=>	[
+				'poetsaml2admin'	=>	'Saml2 Endpoint Admin'
 			]
 		];
 	}
@@ -302,6 +306,23 @@ class ProcessPoetSaml2 extends Process {
 			$f->save();
 		}
 			
+		if(version_compare($from, '0.0.32', '<')) {
+			$prms = $this->permissions;
+			$prm = $prms->add('poetsaml2-admin');
+			$prm->title = 'Saml2 Endpoint Admin';
+			$prm->save();
+		}
+
+		if(version_compare($from, '0.0.34', '<')) {
+			$fieldDefsUmap = include($this->definitionPath('umapFields.php'));
+			$this->createFields($fieldDefsUmap);
+			
+			$template = $this->templates->get(self::$templateName);
+			$fg = $template->fieldgroup;
+			
+			$this->addFieldsToFieldgroup($fg, $fieldDefsUmap);
+		}
+
 	}
 	
 	
@@ -435,8 +456,9 @@ class ProcessPoetSaml2 extends Process {
 		
 		$fieldDefs = include($this->definitionPath('fields.php'));
 		$fieldDefsAdv = include($this->definitionPath('advFields.php'));
+		$fieldDefsUMap = include($this->definitionPath('umapFields.php'));
 		
-		$fieldDefs = array_merge($fieldDefs, $fieldDefsAdv);
+		$fieldDefs = array_merge($fieldDefs, $fieldDefsAdv, $fieldDefsUMap);
 		
 		$this->createFields($fieldDefs);
 	}
@@ -567,7 +589,8 @@ class ProcessPoetSaml2 extends Process {
 		
 		$fieldDefs = include($this->definitionPath('fields.php'));
 		$fieldDefsAdv = include($this->definitionPath('advFields.php'));
-		$fieldDefs = array_merge($fieldDefs, $fieldDefsAdv);
+		$fieldDefsUMap = include($this->definitionPath('umapFields.php'));
+		$fieldDefs = array_merge($fieldDefs, $fieldDefsAdv, $fieldDefsUMap);
 
 		$this->addFieldsToFieldgroup($fg, $fieldDefs, true);
 	}
@@ -575,14 +598,10 @@ class ProcessPoetSaml2 extends Process {
 	
 	protected function addFieldsToFieldgroup($fg, $fieldDefs, $addTitle = false) {
 		
-		$fieldDefs = include($this->definitionPath('fields.php'));
-		$fieldDefsAdv = include($this->definitionPath('advFields.php'));
-		$fieldDefs = array_merge($fieldDefs, $fieldDefsAdv);
-
 		if($addTitle)		
 			$fg->add($this->fields->get('title'));
 		
-		foreach($fieldDefs as $fname => $fdata) {
+		foreach(array_keys($fieldDefs) as $fname) {
 			$fg->add($this->fields->get($fname));
 		}
 		$fg->save();
@@ -647,10 +666,11 @@ class ProcessPoetSaml2 extends Process {
 
 		$fieldDefs = include($this->definitionPath('fields.php'));
 		$fieldDefsAdv = include($this->definitionPath('advFields.php'));
+		$fieldDefsUMap = include($this->definitionPath('umapFields.php'));
 		
-		$fieldDefs = array_merge($fieldDefs, $fieldDefsAdv);
+		$fieldDefs = array_merge($fieldDefs, $fieldDefsAdv, $fieldDefsUMap);
 
-		foreach($fieldDefs as $fname => $fdata) {
+		foreach(array_keys($fieldDefs) as $fname) {
 			$f = $this->fields->get($fname);
 			if($f) {
 				$f->addFlag(Field::flagSystemOverride);
