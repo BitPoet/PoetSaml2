@@ -55,6 +55,10 @@ Click the "Install" button next to "PoetSaml2".
 In the module's configuration, enter the base URL under which all your endpoints will live.
 The default of "saml2" usually isn't too bad. Just make sure it doesn't overlap with an actual page URL.
 
+![PoetSaml2 Module Settings](https://github.com/BitPoet/bitpoet.github.io/blob/master/img/PoetSaml2_modulesettings1.png)
+
+You can also customize the HTML for login error messages here in the module settings.
+
 ### Configuration
 
 You will find a new entry "SAML2 Configuration" under "Access" in the ProcessWire admin.
