@@ -5,7 +5,7 @@ return [
 	'ps2Active'				=>	[
 		'type'					=>	'checkbox',
 		'label'					=>	'Active',
-		'description'			=>	'Check this box to active this configuration. Make sure you have filled out all necessary fields before you do that.',
+		'description'			=>	'Check this box to active this profile. Make sure you have filled out all necessary fields before you do that.',
 		'tags'					=>	'poetsaml2'
 	],
 
@@ -17,9 +17,9 @@ return [
 
 	'ps2OurEntityId'		=>	[
 		'type'					=>	'text',
-		'label'					=>	'Our Entity Id (URI notation!)',
-		'tags'					=>	'poetsaml2',
-		'notes'					=>	'This is a fictional URL used to identify your SP in the IdP. This is usually https://your-domain-name/sp.'
+		'label'					=>	'Our Entity Id (Usually URI notation!)',
+		'notes'					=>	'This is a fictional URL (sometimes just a name) used to identify your SP in the IdP. This is usually https://your-domain-name/sp.',
+		'tags'					=>	'poetsaml2'
 	],
 
 	'ps2NameIdFormat'		=>	[
@@ -27,11 +27,11 @@ return [
 		'inputfieldClass'		=>	'InputfieldSelect',
 		'label'					=>	'Our NameIdFormat',
 		'export_options'		=>	[
-			'default'				=>	"1=NAMEID_EMAIL_ADDRESS\n2=NAMEID_X509_SUBJECT_NAME\n3=NAMEID_WINDOWS_DOMAIN_QUALIFIED_NAME\n4=NAMEID_UNSPECIFIED\n5=NAMEID_KERBEROS\n6=NAMEID_ENTITY\n7=NAMEID_TRANSIENT\n8=NAMEID_PERSISTENT\n9=NAMEID_ENCRYPTED"
+			'default'				=>	"1=NAMEID_EMAIL_ADDRESS|NAMEID_EMAIL_ADDRESS\n2=NAMEID_X509_SUBJECT_NAME|NAMEID_X509_SUBJECT_NAME\n3=NAMEID_WINDOWS_DOMAIN_QUALIFIED_NAME|NAMEID_WINDOWS_DOMAIN_QUALIFIED_NAME\n4=NAMEID_UNSPECIFIED|NAMEID_UNSPECIFIED\n5=NAMEID_KERBEROS|NAMEID_KERBEROS\n6=NAMEID_ENTITY|NAMEID_ENTITY\n7=NAMEID_TRANSIENT|NAMEID_TRANSIENT\n8=NAMEID_PERSISTENT|NAMEID_PERSISTENT\n9=NAMEID_ENCRYPTED|NAMEID_ENCRYPTED"
 		],
-		'initialValue'			=>	'1',
-		'tags'					=>	'poetsaml2',
-		'required'				=>	'1'
+		'initValue'				=>	'1',
+		'required'				=>	'1',
+		'tags'					=>	'poetsaml2'
 	],
 	
 	'ps2CreateSelfSignedCert'	=>	[
@@ -47,6 +47,7 @@ return [
 		'label'					=>	'2 Letter Country Code',
 		'description'			=>	'Necessary for certificate request creation',
 		'showIf'				=>	'ps2CreateSelfSignedCert=1',
+		'required'				=>	true,
 		'requiredIf'			=>	'ps2CreateSelfSignedCert=1',
 		'pattern'				=>	'[A-Z]{2}',
 		'size'					=>	'2',
@@ -131,7 +132,7 @@ return [
 	'ps2IdpEntityId'		=>	[
 		'type'					=>	'text',
 		'tags'					=>	'poetsaml2',
-		'label'					=>	'IdP Entity Id (URI notation!)'
+		'label'					=>	'IdP Entity Id (Usually URI notation!)'
 	],
 	
 	'ps2IdpSOSUrl'			=>	[

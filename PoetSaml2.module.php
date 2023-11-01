@@ -123,7 +123,7 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		return [
 			"title"			=>	__('Poet SAML2', __FILE__),
 			"summary"		=>	__('A SAML2 Service Provider implementation based on OneLogin/php-saml'),
-			"version"		=>	'0.0.24',
+			"version"		=>	'0.0.27',
 			"requires"		=>	'PHP>=7.3.0,ProcessWire>=3.0.218,FieldtypeOptions,FieldtypeRepeater',
 			"installs"		=>	'ProcessPoetSaml2',
 			"autoload"		=>	true
@@ -158,7 +158,7 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 	
 	public function addSamlLoginButtons(HookEvent $event) {
 		
-		$configs = $this->pages->find('template=' . self::$templateName . ', ps2Active=1, include=all');
+		$profiles = $this->pages->find('template=' . self::$templateName . ', ps2Active=1, include=all');
 		
 		if($configs->count() > 0) {
 			
@@ -170,15 +170,15 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 			$wrap->label = $this->_('External Login Providers');
 			$wrap->addClass('uk-margin-top');
 			
-			foreach($configs as $conf) {
+			foreach($profiles as $profile) {
 				
 				$httpHostBase = ($this->config->https ? 'https' : 'http') . '://' . $this->config->httpHost;
-				$myUrl = $httpHostBase . $this->urls->root . $this->urlBase . '/' . $conf->name . '/start';
+				$myUrl = $httpHostBase . $this->urls->root . $this->urlBase . '/' . $profile->name . '/start';
 				$adminUrl = $httpHostBase . parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 				
 				$f = $this->modules->get('InputfieldButton');
 				$f->attr('href', $myUrl . '?RelayState=' . urlencode($adminUrl));
-				$f->text = sprintf($this->_('Log in with %s'), $conf->title);
+				$f->text = sprintf($this->_('Log in with %s'), $profile->title);
 				$f->columnWidth = $colWidth;
 				$wrap->add($f);
 				
@@ -399,7 +399,7 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		
 		$sp = $event->arguments('sp');
 		
-		$this->initAuth($sp);
+		$this->initAuth($sp, true);
 
 		$settings = $this->auth->getSettings();
 	    $metadata = $settings->getSPMetadata();
@@ -553,9 +553,9 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 
 		// Otherwise, we check if we have some kind of redirect URL set, either generally
 		// or by role
-		$conf = $this->confPage;
+		$profile = $this->confPage;
 		
-		$redirUrl = $this->getLoginRedirectFor($conf, $user);
+		$redirUrl = $this->getLoginRedirectFor($profile, $user);
 		if($redirUrl !== false)
 			$this->session->redirect($redirUrl);
 		
@@ -667,20 +667,20 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 	 * Hookable method that determines the login success redirect URL
 	 * for the logged in user.
 	 *
-	 * @param Page $conf Configuration page
+	 * @param Page $profile Profile page
 	 * @param User $user SAML2 logged-in user
 	 * @return string Redirect URL relative to site root
 	 */
-	public function ___getLoginRedirectFor($conf, $user) {
+	public function ___getLoginRedirectFor($profile, $user) {
 
-		foreach($conf->ps2RoleRedirects->sort('-sort') as $roleSort) {
+		foreach($profile->ps2RoleRedirects->sort('-sort') as $roleSort) {
 			if($user->hasRole($roleSort->ps2RedirRole->name)) {
 				return $roleSort->ps2RedirUrl;
 			}
 		}
 
-		if(isset($conf->ps2RedirDefault))
-			return rtrim($this->config->urls->root, '/') . $conf->ps2RedirDefault;
+		if(isset($profile->ps2RedirDefault))
+			return rtrim($this->config->urls->root, '/') . $profile->ps2RedirDefault;
 		
 		return false;
 		
@@ -772,16 +772,18 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 	}
 	
 	
-	public function initAuth($name) {
+	public function initAuth($name, $validateSPOnly = false) {
 		
 		$settings = $this->buildSettings($name);
 		
 		if($settings === false)
 			throw new WireException('Unable to initialize SAML2 service provider ' . $sp . ': Building settings failed');
 		
-		$auth = new \OneLogin\Saml2\Auth($settings);
-		if(! $auth)
-			throw new WireException('Unable to initialize SAML2 service provider ' . $sp);
+		try {
+			$auth = new \OneLogin\Saml2\Auth($settings, $validateSPOnly);
+		} catch(Exception $e) {
+			throw new WireException('Unable to initialize SAML2 service provider ' . $sp . ': ' . $e->getMessage());
+		}
 		
 		$this->auth = $auth;
 		
@@ -793,22 +795,22 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 	public function buildSettings($name) {
 		
 		$name = $this->sanitizer->pageName($name);
-		$conf = $this->pages->get('template=' . self::$templateName . ', ps2Active=1, name=' . $name);
+		$profile = $this->pages->get('template=' . self::$templateName . ', ps2Active=1, name=' . $name);
 		
-		if($conf instanceof NullPage)
+		if($profile instanceof NullPage)
 			throw new WireException('Unable to initialize SAML2 service provider ' . $name. ': No active configuration with this name');
 		
-		$this->confPage = $conf;
+		$this->confPage = $profile;
 
 		$nameIdOptions = $this->modules->get('FieldtypeOptions')->getOptions("ps2NameIdFormat");
-		$nameIdFormat = $nameIdOptions->get('id=' . $conf->ps2NameIdFormat)->value;
+		$nameIdFormat = $nameIdOptions->get('id=' . $profile->ps2NameIdFormat)->value;
 		
 		$myUrl = ($this->config->https ? 'https' : 'http') . '://' . $this->config->httpHost . $this->urls->root . $this->urlBase . '/' . $name;
 		
 		$settings = [
 			'debug'		=>	$this->config->debug,
 			'sp'		=>	[
-				'entityId'						=>	$conf->ps2OurEntityId,
+				'entityId'						=>	$profile->ps2OurEntityId,
 				'assertionConsumerService'		=>	[
 					'url'								=>	$myUrl . '/login',
 					'binding'							=>	'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'
@@ -818,28 +820,101 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 					'binding'							=>	'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'
 				],
 				'NameIDFormat'					=>	self::$nameIdFormats[$nameIdFormat],
-				'x509cert'						=>	$conf->ps2OurX509CertBin,
-				'privateKey'					=>	$conf->ps2OurPrivateKeyBin
+				'x509cert'						=>	$profile->ps2OurX509CertBin,
+				'privateKey'					=>	$profile->ps2OurPrivateKeyBin
 			],
 			'idp'		=>	[
-				'entityId'						=>	$conf->ps2IdpEntityId,
+				'entityId'						=>	$profile->ps2IdpEntityId,
 				'singleSignOnService'			=>	[
-					'url'								=>	$conf->ps2IdpSOSUrl,
+					'url'								=>	$profile->ps2IdpSOSUrl,
 					'binding'							=>	'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-REDIRECT'
 				],
 				'singleLogoutService'			=>	[
-					'url'								=>	$conf->ps2IdpLOSUrl,
+					'url'								=>	$profile->ps2IdpLOSUrl,
 					'responseUrl'						=>	'',
 					'binding'							=>	'urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST'
 				],
-				'x509cert'						=>	$conf->ps2IdpX509CertBin,
+				'x509cert'						=>	$profile->ps2IdpX509CertBin,
 			]
 		];
+		
+		if($profile->ps2Advanced == 1) {
+			$advSettings = $this->buildAdvancedSettings($profile);
+			$settings = array_merge($settings, $advSettings);
+		}
 		
 		$this->rawSettings = $settings;
 		
 		return $settings;
 		
+	}
+	
+	
+	public function buildAdvancedSettings($profile) {
+		
+		$signatureAlgorithmOptions = $this->modules->get('FieldtypeOptions')->getOptions("signatureAlgorithm");
+		$signatureAlgorithm = $signatureAlgorithmOptions->get('id=' . $profile->ps2NameIdFormat)->value;
+
+		$digestAlgorithmOptions = $this->modules->get('FieldtypeOptions')->getOptions("digestAlgorithm");
+		$digestAlgorithm = $digestAlgorithmOptions->get('id=' . $profile->ps2NameIdFormat)->value;
+
+		$encryptionAlgorithmOptions = $this->modules->get('FieldtypeOptions')->getOptions("encryptionAlgorithm");
+		$encryptionAlgorithm = $encryptionAlgorithmOptions->get('id=' . $profile->ps2NameIdFormat)->value;
+
+		$advancedSettings = [
+		    'compress' => [
+		        'requests' => true,
+		        'responses' => true
+		    ],
+		    // Security settings
+		    'security' => [
+		        'nameIdEncrypted'					=>	$profile->nameIdEncrypted,
+		        'authnRequestsSigned'				=>	$profile->authnRequestsSigned,
+		        'logoutRequestSigned'				=>	$profile->logoutRequestSigned,
+		        'logoutResponseSigned'				=>	$profile->logoutResponseSigned,
+		        'signMetadata'						=>	($profile->signMetadata == 1),
+		        'wantMessagesSigned'				=>	$profile->wantMessagesSigned,
+		        'wantAssertionsEncrypted'			=>	$profile->wantAssertionsEncrypted,
+		        'wantAssertionsSigned'				=>	$profile->wantAssertionsSigned,
+		        'wantNameId'						=>	$profile->wantNameId,
+		        'wantNameIdEncrypted'				=>	$profile->wantNameIdEncrypted,
+		        'requestedAuthnContext'				=>	$profile->requestedAuthnContext,
+		        'requestedAuthnContextComparison'	=>	'exact',
+		        'wantXMLValidation'					=>	$profile->wantXMLValidation,
+		        'relaxDestinationValidation'		=>	$profile->relaxDestinationValidation,
+		        'destinationStrictlyMatches'		=>	$profile->destinationStrictlyMatches,
+		        'allowRepeatAttributeName'			=>	$profile->allowRepeatAttributeName,
+		        'rejectUnsolicitedResponsesWithInResponseTo'	=>	$profile->rejectUnsolicitedResponsesWithInResponseTo,
+		        'signatureAlgorithm'				=>	$signatureAlgorithm,
+		        'digestAlgorithm'					=>	$digestAlgorithm,
+		        'encryption_algorithm'				=>	$encryptionAlgorithm,
+		        'lowercaseUrlencoding'				=>	$profile->lowercaseUrlencoding,
+		    ],
+		    /*
+		    // Contact information template, it is recommended to suply a technical and support contacts
+		    'contactPerson' => [
+		        'technical' => [
+		            'givenName' => '',
+		            'emailAddress' => ''
+		        ],
+		        'support' => [
+		            'givenName' => '',
+		            'emailAddress' => ''
+		        ],
+		    ],
+		    // Organization information template, the info in en_US lang is recomended, add more if required
+		    'organization' => [
+		        'en-US' => [
+		            'name' => '',
+		            'displayname' => '',
+		            'url' => ''
+		        ],
+		    ],
+		    */
+		];
+		
+		return $advancedSettings;
+
 	}
 	
 	

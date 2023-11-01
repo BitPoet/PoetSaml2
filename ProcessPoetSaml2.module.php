@@ -8,7 +8,7 @@ class ProcessPoetSaml2 extends Process {
 		return [
 			'title'			=>	__('Poet SAML2 Admin', __FILE__),
 			'summary'		=>	__('Management interface for the PoetSaml2 module', __FILE__),
-			'version'		=>	'0.0.24',
+			'version'		=>	'0.0.27',
 			'requires'		=>	'PoetSaml2',
 			'icon'			=>	'address-book-o',
 			'page'			=>	[
@@ -21,6 +21,11 @@ class ProcessPoetSaml2 extends Process {
 	}
 	
 	
+	/**
+	 * Output the overview page.
+	 *
+	 * @return String HTML output
+	 */
 	public function ___execute() {
 		
 		$form = $this->buildForm();
@@ -30,6 +35,11 @@ class ProcessPoetSaml2 extends Process {
 	}
 	
 	
+	/**
+	 * Add a new profile.
+	 *
+	 * @return String HTML output
+	 */
 	public function ___executeAdd() {
 		
 		$inp = $this->input->post;
@@ -50,14 +60,21 @@ class ProcessPoetSaml2 extends Process {
 				
 			} else {
 				
-				$conf = new Page();
-				$conf->template = $this->templates->get(self::$templateName);
-				$conf->parent = $this->page;
-				$conf->name = $sanitizer->pageName($inp->confName);
-				$conf->title = $sanitizer->text($inp->confTitle);
-				$conf->save();
+				$profile = new Page();
+				$profile->template = $this->templates->get(self::$templateName);
+				$profile->parent = $this->page;
+				$profile->name = $sanitizer->pageName($inp->confName);
+				$profile->title = $sanitizer->text($inp->confTitle);
+				$profile->save();
 				
-				$this->session->redirect($conf->editUrl);
+				foreach($profile->template->fields as $f) {
+					if($f->type instanceof FieldtypeCheckbox && $f->initValue) {
+						$profile->set($f->name, $f->initValue);
+					}
+				}
+				$profile->save();
+				
+				$this->session->redirect($profile->editUrl);
 				
 			}
 			
@@ -68,7 +85,13 @@ class ProcessPoetSaml2 extends Process {
 	}
 	
 	
-	public function executeExport() {
+	/**
+	 * Export the given profile
+	 *
+	 * To implement your own exporter, you need to hook before executeExport
+	 * and exit PHP at the end of your hook.
+	 */
+	public function ___executeExport() {
 		
 		$id = (int)$this->input->get->id;
 		
@@ -86,16 +109,21 @@ class ProcessPoetSaml2 extends Process {
 	}
 	
 	
-	public function buildFormAdd() {
+	/**
+	 * Create the form for adding a new profile.
+	 *
+	 * @return InputfieldForm
+	 */
+	public function ___buildFormAdd() {
 		
 		$form = $this->modules->get('InputfieldForm');
 		$form->attr('method', 'POST');
 		$form->attr('action', 'add');
-		$form->label = $this->_('Create New SAML2 Configuration');
+		$form->label = $this->_('Create New SAML2 Profile');
 		
 		$f = $this->modules->get('InputfieldText');
 		$f->attr('id+name', 'confName');
-		$f->label = $this->_('Configuration Name');
+		$f->label = $this->_('Profile Name');
 		$f->description = $this->_('Lowercase letters, digits and underscores are allowed. Must start with a lowercase letter and not end with an underscore');
 		$f->required = true;
 		$f->attr('pattern', '[a-z]([a-z0-9_]*[a-z0-9])*');
@@ -104,21 +132,25 @@ class ProcessPoetSaml2 extends Process {
 		$f = $this->modules->get('InputfieldText');
 		$f->attr('id+name', 'confTitle');
 		$f->label = $this->_('Label');
-		$f->description = $this->_('Readable Label for the Configuration');
+		$f->description = $this->_('Readable Label for the Profile');
 		$f->required = true;
 		$form->append($f);
 		
 		$f = $this->modules->get('InputfieldSubmit');
 		$f->attr('id+name', 'submit_save');
-		$f->attr('value', $this->_('Create Configuration'));
+		$f->attr('value', $this->_('Create Profile'));
 		$form->append($f);
 
 		return $form;
 		
 	}
 	
-	
-	protected function buildForm() {
+	/**
+	 * Create the admin overview form for managing Saml2 profiles
+	 *
+	 * @return InputfieldForm
+	 */
+	public function ___buildForm() {
 		
 		$form = $this->modules->get('InputfieldForm');
 		$form->label = $this->_('Configure SAML2 IdPs');
@@ -128,15 +160,15 @@ class ProcessPoetSaml2 extends Process {
 			$this->error($this->_('$config->sessionCookieSameSite must be set to "None" for SAML2 authentication to work!'));
 		}
 		
-		$confPages = $this->page->children('template=' . self::$templateName);
+		$profilePages = $this->page->children('template=' . self::$templateName);
 		
-		if($confPages->count() > 0) {
+		if($profilePages->count() > 0) {
 			
 			$mrk = $this->modules->get('MarkupAdminDataTable');
 			$mrk->setEncodeEntities(false);
 			$mrk->headerRow([
 				$this->_('Active'),
-				$this->_('Configuration'),
+				$this->_('Profile'),
 				$this->_('SP'),
 				$this->_('IdP'),
 				$this->_('Metadata'),
@@ -144,21 +176,21 @@ class ProcessPoetSaml2 extends Process {
 				$this->_('Delete')
 			]);
 			
-			foreach($confPages as $conf) {
+			foreach($profilePages as $profile) {
 				
 				$urlBase = $this->modules->get('PoetSaml2')->urlBase;
-				$metadataUrl = ($this->config->https? 'https' : 'http') . '://' . $this->config->httpHost . $this->config->urls->root . $urlBase . '/' . $conf->name . '/metadata?download=1';
-				$disabled = $conf->ps2Active ? '' : "disabled='disabled'";
-				$activeIcon = $conf->ps2Active ? 'fa-check-square-o' : 'fa-square-o';
+				$metadataUrl = ($this->config->https? 'https' : 'http') . '://' . $this->config->httpHost . $this->config->urls->root . $urlBase . '/' . $profile->name . '/metadata?download=1';
+				$disabled = $profile->ps2Active ? '' : "disabled='disabled'";
+				$activeIcon = $profile->ps2Active ? 'fa-check-square-o' : 'fa-square-o';
 				
 				$mrk->row([
 					"<i class='fa $activeIcon'> </i>",
-					'<a href="' . $conf->editUrl . '"><i class="fa fa-edit"> </i> ' . $conf->title . '</a>',
-					$this->sanitizer->truncate($conf->ps2OurEntityId, 40),
-					$this->sanitizer->truncate($conf->ps2IdpEntityId, 40),
+					'<a href="' . $profile->editUrl . '"><i class="fa fa-edit"> </i> ' . $profile->title . '</a>',
+					$this->sanitizer->truncate($profile->ps2OurEntityId, 40),
+					$this->sanitizer->truncate($profile->ps2IdpEntityId, 40),
 					"<a class='fa fa-download' href='$metadataUrl' title='" . $this->_("Download Metadata XML") . "' $disabled> </a>",
-					"<a class='fa fa-floppy-o' href='./export?id={$conf->id}' title='" . $this->_("Export Configuration") . "'> </a>",
-					"<a class='fa fa-trash' href='del?id={$conf->id}' title='" . $this->_("Delete Configuration") . "'> </a>"
+					"<a class='fa fa-floppy-o' href='./export?id={$profile->id}' title='" . $this->_("Export Profile") . "'> </a>",
+					"<a class='fa fa-trash' href='del?id={$profile->id}' title='" . $this->_("Delete Profile") . "'> </a>"
 				]);
 			}
 			
@@ -169,7 +201,7 @@ class ProcessPoetSaml2 extends Process {
 		} else {
 			
 			$wrap = $this->modules->get('InputfieldMarkup');
-			$wrap->attr('value', '<p class="ps2-noconfigs">' . $this->_('No SAML2 configurations found') . '</p>');
+			$wrap->attr('value', '<p class="ps2-noconfigs">' . $this->_('No SAML2 profiles found') . '</p>');
 			$form->append($wrap);
 			
 		}
@@ -177,7 +209,7 @@ class ProcessPoetSaml2 extends Process {
 		$f = $this->modules->get('InputfieldButton');
 		$f->attr('name', 'btnAdd');
 		$f->attr('href', 'add');
-		$f->html = '<i class="fa fa-plus-o"> </i> ' . $this->_('Add configuration');
+		$f->html = '<i class="fa fa-plus-o"> </i> ' . $this->_('Add Profile');
 		$form->append($f);
 		
 		return $form;
@@ -207,6 +239,24 @@ class ProcessPoetSaml2 extends Process {
 
 	}
 	
+	
+	public function ___upgrade($from, $to) {
+		
+		if(version_compare($from, '0.0.27', '<')) {
+
+			$fieldDefsAdv = include($this->definitionPath('advFields.php'));
+			$this->createFields($fieldDefsAdv);
+			
+			$template = $this->templates->get(self::$templateName);
+			$fg = $template->fieldgroup;
+			
+			$this->addFieldsToFieldgroup($fg, $fieldDefsAdv);
+			
+		}
+		
+	}
+	
+	
 	protected function definitionPath($file) {
 		return __DIR__ . DIRECTORY_SEPARATOR . 'defs' . DIRECTORY_SEPARATOR . $file;
 	}
@@ -214,25 +264,50 @@ class ProcessPoetSaml2 extends Process {
 	protected function createIndividualFields() {
 		
 		$fieldDefs = include($this->definitionPath('fields.php'));
+		$fieldDefsAdv = include($this->definitionPath('advFields.php'));
+		
+		$fieldDefs = array_merge($fieldDefs, $fieldDefsAdv);
+		
+		$this->createFields($fieldDefs);
+	}
+	
+	
+	protected function createFields($fieldDefs) {
+
 		foreach($fieldDefs as $fname => $fdata) {
+
 			$f = $this->fields->get($fname);
 			if(! $f) {
+
 				$f = new Field();
 				$f->name = $fname;
 				$f->setImportData($fdata);
 				$f->save();
+				
 				if($fdata['type'] === 'options' && isset($fdata['export_options'])) {
-					$optString = preg_replace('/(?<==)([A-Z0-9_]+)$/m', '$1|$1', $fdata['export_options']['default']);
+					$optString = str_replace("\\n", chr(10), $fdata['export_options']['default']);
+					$optLines = explode(chr(10), $optString);
 					$mgr = new SelectableOptionManager();
-					$mgr->setOptionsString($f, $optString, false);
-					if($fdata['initialValue'])
-						$f->initialValue = $fdata['initialValue'];
+					$opts = new SelectableOptionArray();
+					foreach($optLines as $optLine) {
+						list($num, $txt) = explode('=', $optLine, 2);
+						list($value, $label) = explode('|', $txt, 2);
+						$this->log(sprintf("Adding option %d to field %s: value = '%s', label = '%s'", $num, $fname, $value, $label));
+						$opt = new SelectableOption();
+						$opt->title = $label;
+						$opt->value = $value;
+						$opts->add($opt);
+					}
+					$mgr->setOptions($f, $opts, false);
 				}
+				
 				$f->addFlag(Field::flagSystem);
 				$this->fields->save($f);
+
 			}
+
 		}
-		
+
 	}
 	
 	
@@ -311,7 +386,7 @@ class ProcessPoetSaml2 extends Process {
 		if($template)
 			return;
 
-		// Create the template for SP configurations
+		// Create the template for SP profiles
 		$template = $this->templates->add(self::$templateName, [
 			'tags'			=>	'PoetSaml2',
 			'label'			=>	'PoetSaml2 SP',
@@ -319,16 +394,31 @@ class ProcessPoetSaml2 extends Process {
 		]);
 		
 		// Add all fields to our template
-		$fieldDefs = include($this->definitionPath('fields.php'));
 		$fg = $template->fieldgroup;
 		
-		$fg->add($this->fields->get('title'));
+		$fieldDefs = include($this->definitionPath('fields.php'));
+		$fieldDefsAdv = include($this->definitionPath('advFields.php'));
+		$fieldDefs = array_merge($fieldDefs, $fieldDefsAdv);
+
+		$this->addFieldsToFieldgroup($fg, $fieldDefs, true);
+	}
+	
+	
+	protected function addFieldsToFieldgroup($fg, $fieldDefs, $addTitle = false) {
+		
+		$fieldDefs = include($this->definitionPath('fields.php'));
+		$fieldDefsAdv = include($this->definitionPath('advFields.php'));
+		$fieldDefs = array_merge($fieldDefs, $fieldDefsAdv);
+
+		if($addTitle)		
+			$fg->add($this->fields->get('title'));
 		
 		foreach($fieldDefs as $fname => $fdata) {
 			$fg->add($this->fields->get($fname));
 		}
 		$fg->save();
 	}
+	
 	
 	protected function removeEndpointsPages() {
 		
@@ -385,7 +475,12 @@ class ProcessPoetSaml2 extends Process {
 	}
 	
 	protected function removeIndividualFields() {
+
 		$fieldDefs = include($this->definitionPath('fields.php'));
+		$fieldDefsAdv = include($this->definitionPath('advFields.php'));
+		
+		$fieldDefs = array_merge($fieldDefs, $fieldDefsAdv);
+
 		foreach($fieldDefs as $fname => $fdata) {
 			$f = $this->fields->get($fname);
 			if($f) {
