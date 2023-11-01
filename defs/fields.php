@@ -64,6 +64,7 @@ return [
 	'ps2OurX509Cert'		=>	[
 		'type'					=>	'textarea',
 		'label'					=>	'Our X509 Certificate',
+		'collapsed'				=>	Inputfield::collapsedBlank,
 		'tags'					=>	'poetsaml2',
 		'note'					=>	'Paste the certificate in PEM format, not binary! Certficiate can be pasted with or without header and footer ("-----BEGIN CERTIFICATE-----" / "-----END CERTIFICATE-----")'
 	],
@@ -79,6 +80,7 @@ return [
 	'ps2OurPrivateKey'		=>	[
 		'type'					=>	'textarea',
 		'label'					=>	'Private Key for our Certificate (PEM). With or without header and footer ("-----BEGIN PRIVATE KEY-----" / "-----END PRIVATE KEY-----"',
+		'collapsed'				=>	Inputfield::collapsedBlank,
 		'tags'					=>	'poetsaml2'
 	],
 	
@@ -99,6 +101,7 @@ return [
 	'ps2IdpFs'				=>	[
 		'type'					=>	'FieldtypeFieldsetOpen',
 		'label'					=>	'IdP Configuration',
+		'collapsed'				=>	Inputfield::collapsedYes,
 		'tags'					=>	'poetsaml2'
 	],
 
@@ -139,12 +142,16 @@ return [
 	'ps2IdpEntityId'		=>	[
 		'type'					=>	'text',
 		'tags'					=>	'poetsaml2',
+		'required'				=>	true,
+		'requiredIf'			=>	'ps2Active=1',
 		'label'					=>	'IdP Entity Id (Usually URI notation!)'
 	],
 	
 	'ps2IdpSOSUrl'			=>	[
 		'type'					=>	'text',
 		'tags'					=>	'poetsaml2',
+		'required'				=>	true,
+		'requiredIf'			=>	'ps2Active=1',
 		'label'					=>	'IdP Single Sign-On Service URL'
 	],
 	
@@ -157,6 +164,9 @@ return [
 	'ps2IdpX509Cert'		=>	[
 		'type'					=>	'textarea',
 		'label'					=>	'IdP X509 Certificate',
+		'collapsed'				=>	Inputfield::collapsedBlank,
+		'required'				=>	true,
+		'requiredIf'			=>	'ps2Active=1',
 		'tags'					=>	'poetsaml2',
 		'note'					=>	'Paste the certificate in PEM format, not binary!  Certficiate can be pasted with or without header and footer ("-----BEGIN CERTIFICATE-----" / "-----END CERTIFICATE-----")'
 	],
@@ -178,6 +188,7 @@ return [
 	'ps2RedirFs'			=>	[
 		'type'					=>	'FieldtypeFieldsetOpen',
 		'label'					=>	'Redirect Target for IdP Initiated Login',
+		'collapsed'				=>	Inputfield::collapsedYes,
 		'tags'					=>	'poetsaml2'
 	],
 

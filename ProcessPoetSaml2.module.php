@@ -8,7 +8,7 @@ class ProcessPoetSaml2 extends Process {
 		return [
 			'title'			=>	__('Poet SAML2 Admin', __FILE__),
 			'summary'		=>	__('Management interface for the PoetSaml2 module', __FILE__),
-			'version'		=>	'0.0.29',
+			'version'		=>	'0.0.30',
 			'requires'		=>	'PoetSaml2',
 			'icon'			=>	'address-book-o',
 			'page'			=>	[
@@ -267,6 +267,27 @@ class ProcessPoetSaml2 extends Process {
 			$fg->save();
 
 		}
+		
+		
+		if(version_compare($from, '0.0.30', '<')) {
+			foreach(['ps2IdpFs', 'ps2RedirFs'] as $fname) {
+				$f = $this->fields->get($fname);
+				$f->collapsed = Inputfield::collapsedYes;
+				$f->save();
+			}
+			foreach(['ps2OurX509Cert','ps2OurPrivateKey','ps2IdpX509Cert'] as $fname) {
+				$f = $this->fields->get($fname);
+				$f->collapsed = Inputfield::collapsedBlank;
+				$f->save();
+			}
+			foreach(['ps2IdpX509Cert','ps2IdpEntityId','ps2IdpSOSUrl'] as $fname) {
+				$f = $this->fields->get();
+				$f->required = true;
+				$f->requiredIf = 'ps2Active=1';
+				$f->save();
+			}
+		}
+			
 	}
 	
 	
