@@ -58,6 +58,12 @@ Then fill in the fields in the profile:
 #### Active
   As long as this box isn't checked, your SP endpoints will not be reachable.
   Make sure to fill in all information before activating this checkbox.
+  
+#### Add Backend Login Button
+
+As the name says, adds a "Log in with ..." Button to the ProcessWire admin
+login. If you have frontend only users, this is probably not desireable,
+so this needs to be checked explicitly for the login button to appear.
 
 #### SP Configuration
 
@@ -298,7 +304,7 @@ create new users and update data for existing users.
 - Support basic authentication for select pages to provide a smooth upgrade path for legacy applications
 - Add configurable mapping from passed identity to unique PW user field
 - Add identity mapping hook
-- Make backend login buttons configurable
+- ~~Make backend login buttons configurable~~
 - ~~Change naming for individual SP/IdP configurations from "configuration" to "profile"~~
 - Update screenshots
 

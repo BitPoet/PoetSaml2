@@ -8,7 +8,7 @@ class ProcessPoetSaml2 extends Process {
 		return [
 			'title'			=>	__('Poet SAML2 Admin', __FILE__),
 			'summary'		=>	__('Management interface for the PoetSaml2 module', __FILE__),
-			'version'		=>	'0.0.27',
+			'version'		=>	'0.0.29',
 			'requires'		=>	'PoetSaml2',
 			'icon'			=>	'address-book-o',
 			'page'			=>	[
@@ -254,6 +254,19 @@ class ProcessPoetSaml2 extends Process {
 			
 		}
 		
+		if(version_compare($from, '0.0.27', '=')) {
+
+			$fields = include($this->definitionPath('fields.php'));
+			$this->createFields(['ps2BackendButton' => $fields['ps2BackendButton']]);
+			
+			$template = $this->templates->get(self::$templateName);
+			$fg = $template->fieldgroup;
+			$fButton = $this->fields->get('ps2BackendButton');
+			$fActive = $this->fields->get('ps2Active');
+			$fg->insertAfter($fButton, $fActive);
+			$fg->save();
+
+		}
 	}
 	
 	

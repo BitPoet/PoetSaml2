@@ -9,6 +9,13 @@ return [
 		'tags'					=>	'poetsaml2'
 	],
 
+	'ps2BackendButton'		=>	[
+		'type'					=>	'checkbox',
+		'label'					=>	'Add Backend Login Button',
+		'description'			=>	'Adds a "Log in with ..." button to the ProcessWire Backend login form',
+		'tags'					=>	'poetsaml2'
+	],
+
 	'ps2OurFs'				=>	[
 		'type'					=>	'FieldtypeFieldsetOpen',
 		'label'					=>	'SP Configuration',

@@ -123,7 +123,7 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 		return [
 			"title"			=>	__('Poet SAML2', __FILE__),
 			"summary"		=>	__('A SAML2 Service Provider implementation based on OneLogin/php-saml'),
-			"version"		=>	'0.0.27',
+			"version"		=>	'0.0.29',
 			"requires"		=>	'PHP>=7.3.0,ProcessWire>=3.0.218,FieldtypeOptions,FieldtypeRepeater',
 			"installs"		=>	'ProcessPoetSaml2',
 			"autoload"		=>	true
@@ -158,13 +158,13 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 	
 	public function addSamlLoginButtons(HookEvent $event) {
 		
-		$profiles = $this->pages->find('template=' . self::$templateName . ', ps2Active=1, include=all');
+		$profiles = $this->pages->find('template=' . self::$templateName . ', ps2Active=1, ps2BackendButton=1, include=all');
 		
-		if($configs->count() > 0) {
+		if($profiles->count() > 0) {
 			
 			$form = $event->return;
 			
-			$colWidth = floor(100 / ($configs->count() > 4 ? 4 : $configs->count()));
+			$colWidth = floor(100 / ($profiles->count() > 4 ? 4 : $profiles->count()));
 
 			$wrap = $this->modules->get('InputfieldFieldset');
 			$wrap->label = $this->_('External Login Providers');
