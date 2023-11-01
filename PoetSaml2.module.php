@@ -620,6 +620,10 @@ class PoetSaml2 extends WireData implements Module, ConfigurableModule {
 	 *
 	 * This method will only be called if ps2MapUserData (Update User Fields From Claim)
 	 * is enabled in the profile.
+	 *
+	 * @param User $user
+	 * @param array $attributes Associative array with the claim's urn/URI as the key.
+	 * @return void
 	 */
 	 public function ___updateUserData($user, $attributes) {
 	 	
