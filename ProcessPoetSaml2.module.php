@@ -462,7 +462,6 @@ class ProcessPoetSaml2 extends Process {
 					foreach($optLines as $optLine) {
 						list($num, $txt) = explode('=', $optLine, 2);
 						list($value, $label) = explode('|', $txt, 2);
-						$this->log(sprintf("Adding option %d to field %s: value = '%s', label = '%s'", $num, $fname, $value, $label));
 						$opt = new SelectableOption();
 						$opt->title = $label;
 						$opt->value = $value;
