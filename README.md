@@ -49,11 +49,11 @@ You will find a new entry "SAML2 Configuration" under "Access" in the ProcessWir
 
 ![SAML2 Configuration Image](https://github.com/BitPoet/bitpoet.github.io/blob/master/img/PoetSaml2_config_overview.png)
 
-Click "Add Configuration" to create a new SP. Give it a name and title.
+Click "Add Profile" to create a new SP. Give it a name and title.
 
 The name will be a part of the URLs of the endpoints.
 
-Then fill in the fields in the configuration:
+Then fill in the fields in the profile:
 
 #### Active
   As long as this box isn't checked, your SP endpoints will not be reachable.
@@ -63,7 +63,7 @@ Then fill in the fields in the configuration:
 
 ##### Our Entity Id
   The identity of our SP as it will be known to the identity provider. You will need to enter that
-  in the IdP configuration.
+  in the IdP's configuration.
 
 ##### Our NameIdFormat
   The name format we are requesting. For know, the code assumes that you keep the default of
@@ -107,27 +107,37 @@ The certificate our identity provider signs its requests with.
 If you have a metadata xml file for the identity provider or have its URL,
 you can use the import function. *This will overwrite any previous values!*
 
+### Advanced Configuration
+
+At the bottom of the profile, you will find a checkbox for advanced configuration.
+
+This lets you set fine grained options for mandatory stuff, encryption and
+signage as well as enabling a compatibility switch for MS ADFS.
+
+Your best source of information on the different options is right now
+the [advanced_settings_example.php in the php-saml repo](https://github.com/SAML-Toolkits/php-saml/blob/4.0.0/advanced_settings_example.php).
+
 ### Quick Configuration
 
 In the best case, all you need to get up and running are just a few steps:
 
-- Create a config with a name and title
+- Create a profile with a name and title
 - Assign an entity Id, e.g. "https://mysite.url/pw"
 - Check box to create self-signed certificate
+- Activate the profile
 - Download your IdP's metadata.xml file
 - Check "Import Metadata from File"
-- Save your configuration, then go to "SAML2 Configuration" and download
-  the metadata.xml for your newly created configuration
+- Save your profile, then go to "SAML2 Configuration" and download
+  the metadata.xml for your newly created profile
 - Import the metadata.xml into your IdP
 
-All necessary fields should be filled now, and you can activate your
-configuration and start testing.
+All necessary fields should be filled now, and you can start testing.
 
 ![SP Configuration Image](https://github.com/BitPoet/bitpoet.github.io/blob/master/img/PoetSaml2_config_1.png)
 
 ### Testing
 
-Once you have configured everything and activated the configuration, you will see your own
+Once you have configured everything and activated the profile, you will see your own
 metadata.xml by opening https://your-host/path-to-processwire/your-base-url/your-config-name/metadata
 or by clicking the "Download" link on the SAML2 Configuration overwiew table.
 
@@ -152,7 +162,7 @@ different, pre-configured users, "rick", "morty" and "sheldon".
 You will need the following metadata.xml for their IdP, which you can find at
 [their downloads page](https://samltest.id/download/#SAMLtests_IdP):
 
-Create a configuration for samltest.id like explained above in "Quick Configuration".
+Create a profile for samltest.id like explained above in "Quick Configuration".
 
 Save the output of your own metadata URL to a file and upload that on samltest.id ("Testing Resources" -> "Upload Metadata").
 
@@ -278,8 +288,8 @@ create new users and update data for existing users.
 
 - ~~Make life easier by faciliating metadata import~~
 - Implement alternative IdP certificates for cert rollover
-- Clean up code, especially in the loginHook method
-- Give some more explanation on buzzwords, e.g. IdP-initiated or SP-initiated
+- ~~Clean up code, especially in the loginHook method~~
+- ~~Give some more explanation on buzzwords, e.g. IdP-initiated or SP-initiated~~
 - ~~Do some real world testing with MS Entry Id~~
 - ~~Allow automatic creation of ProcessWire users based on SAML2 data~~ (provide hook examples)
 - Integrate with frontend login
@@ -289,7 +299,8 @@ create new users and update data for existing users.
 - Add configurable mapping from passed identity to unique PW user field
 - Add identity mapping hook
 - Make backend login buttons configurable
-- Change naming for individual SP/IdP configurations from "configuration" to "profile"
+- ~~Change naming for individual SP/IdP configurations from "configuration" to "profile"~~
+- Update screenshots
 
 ## License
 
